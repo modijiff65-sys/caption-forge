@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caption Forge — YouTube Caption Style Studio</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2430; --line:#2a3441;
+    --ink:#e6edf3; --muted:#8b98a9; --accent:#2f81f7; --accent2:#22c55e;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:radial-gradient(1200px 600px at 20% -10%,#1b2433 0%,var(--bg) 55%);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh; padding:26px 18px 60px;
+  }
+  header{max-width:1180px;margin:0 auto 22px}
+  h1{margin:0 0 6px;font-size:26px;letter-spacing:-.4px}
+  h1 span{color:var(--accent)}
+  .sub{color:var(--muted);font-size:14px;margin:0}
+  .wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:880px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .card h2{margin:0 0 14px;font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted)}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:12px 0 5px}
+  input[type=text],input[type=number],textarea,select{
+    width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    border-radius:9px;padding:9px 11px;font-size:14px;font-family:inherit;
+  }
+  textarea{resize:vertical;min-height:52px}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  input[type=color]{width:100%;height:38px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:3px;cursor:pointer}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .chk{display:flex;align-items:center;gap:8px;margin-top:14px;color:var(--ink);font-size:14px}
+  .chk input{width:auto;accent-color:var(--accent)}
+  .preview-box{
+    position:relative;width:100%;border-radius:12px;overflow:hidden;border:1px solid var(--line);
+    background:
+      linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px) 0 0/40px 40px,
+      linear-gradient(160deg,#243447,#0e1621 70%);
+    display:flex;align-items:flex-end;justify-content:center;
+  }
+  .preview-box .tag{position:absolute;top:10px;left:12px;font-size:11px;color:#9fb3c8;background:rgba(0,0,0,.35);padding:3px 8px;border-radius:6px}
+  #capText{
+    position:absolute;left:50%;transform:translateX(-50%);width:92%;text-align:center;
+    font-weight:800;line-height:1.15;white-space:pre-wrap;transition:opacity .25s;
+  }
+  .presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .preset{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:20px;padding:7px 13px;font-size:13px;cursor:pointer}
+  .preset:hover{border-color:var(--accent)}
+  .cap-row{display:grid;grid-template-columns:1fr 64px 64px 30px;gap:8px;align-items:center;margin-bottom:8px}
+  .cap-row input{padding:7px 9px;font-size:13px}
+  .del{background:#2a1416;border:1px solid #5a2b30;color:#ff8b95;border-radius:8px;cursor:pointer;height:34px;font-size:15px}
+  .btn{border:none;border-radius:10px;padding:11px 16px;font-size:14px;font-weight:600;cursor:pointer;color:#fff;background:var(--accent)}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--ink)}
+  .btn.green{background:var(--accent2)}
+  .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+  .hint{color:var(--muted);font-size:12.5px;margin-top:12px;line-height:1.5}
+  code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:12.5px;color:#9fd0ff;word-break:break-all}
+  .full{grid-column:1/-1}
+  footer{max-width:1180px;margin:22px auto 0;color:var(--muted);font-size:12.5px;text-align:center}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;
+    background:#10241a;border:1px solid #1f6b3f;color:#7ee2a8;padding:10px 18px;border-radius:10px;
+    font-size:13.5px;transition:all .25s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Caption <span>Forge</span></h1>
+  <p class="sub">YouTube captions ka style studio — text, color, outline, position, animation set karo, live preview dekho, aur <code>.ass</code> file export karo. Text-style gaming videos ke liye banaya gaya.</p>
+</header>
+
+<div class="wrap">
+  <!-- LEFT: controls -->
+  <div class="card">
+    <h2>Style</h2>
+    <div class="presets" id="presets"></div>
+
+    <label for="capInput">Caption text (preview ke liye)</label>
+    <textarea id="capInput">DIAMOND MIL GAYA!</textarea>
+
+    <div class="row">
+      <div>
+        <label for="fontPct">Font size — <span id="fontPctVal">6.0</span>% of height</label>
+        <input type="range" id="fontPct" min="2" max="16" step="0.5" value="6">
+      </div>
+      <div>
+        <label for="outlineW">Outline width — <span id="outlineWVal">4</span>px</label>
+        <input type="range" id="outlineW" min="0" max="12" step="0.5" value="4">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="txtColor">Text color</label>
+        <input type="color" id="txtColor" value="#ffe100">
+      </div>
+      <div>
+        <label for="outColor">Outline color</label>
+        <input type="color" id="outColor" value="#101010">
+      </div>
+    </div>
+
+    <div class="row3">
+      <div>
+        <label for="pos">Position</label>
+        <select id="pos">
+          <option value="bottom" selected>Bottom</option>
+          <option value="middle">Middle</option>
+          <option value="top">Top</option>
+        </select>
+      </div>
+      <div>
+        <label for="anim">Animation</label>
+        <select id="anim">
+          <option value="none">None</option>
+          <option value="fade" selected>Fade</option>
+          <option value="pop">Pop</option>
+        </select>
+      </div>
+      <div>
+        <label for="font">Font</label>
+        <select id="font">
+          <option value="DejaVu Sans" selected>DejaVu Sans</option>
+          <option value="Arial">Arial</option>
+          <option value="Liberation Sans">Liberation Sans</option>
+          <option value="Impact">Impact</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="chk"><input type="checkbox" id="bold" checked><label for="bold" style="margin:0">Bold</label></div>
+
+    <label for="res">Canvas resolution</label>
+    <select id="res">
+      <option value="1920x1080" selected>1920 × 1080 (YouTube)</option>
+      <option value="1280x720">1280 × 720 (720p)</option>
+      <option value="1080x1920">1080 × 1920 (Shorts / vertical)</option>
+      <option value="1080x1080">1080 × 1080 (Square)</option>
+    </select>
+  </div>
+
+  <!-- RIGHT: preview -->
+  <div class="card">
+    <h2>Live preview</h2>
+    <div class="preview-box" id="previewBox">
+      <div class="tag" id="resTag">1920 × 1080</div>
+      <div id="capText">DIAMOND MIL GAYA!</div>
+    </div>
+    <p class="hint">Preview sirf style dikhane ke liye hai. Asli video mein text exactly isi tarah burn hoga.</p>
+  </div>
+
+  <!-- Captions list -->
+  <div class="card full">
+    <h2>Caption lines (timing)</h2>
+    <div id="capList"></div>
+    <div class="actions">
+      <button class="btn ghost" id="addCap">+ Caption line</button>
+      <button class="btn green" id="expAss">Export .ass</button>
+      <button class="btn ghost" id="expSrt">Export .srt</button>
+      <button class="btn ghost" id="copyCmd">Copy ffmpeg command</button>
+    </div>
+    <p class="hint" id="cmdHint">Burn command: <code id="cmd">ffmpeg -i input.mp4 -vf "ass=captions.ass" -c:v libx264 -crf 18 -preset veryfast -c:a copy output.mp4</code></p>
+  </div>
+</div>
+
+<footer>Caption Forge — single-file web app. No tracking, no server; sab kuch tumhare browser mein chalta hai.</footer>
+<div class="toast" id="toast">Copied</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const PRESETS = {
+  "Classic Yellow": {txt:"#ffe100", out:"#101010", bold:true, fontPct:6, outlineW:4},
+  "MrBeast":        {txt:"#ffffff", out:"#000000", bold:true, fontPct:8, outlineW:6},
+  "Neon Cyan":      {txt:"#00e5ff", out:"#00131a", bold:true, fontPct:6.5, outlineW:4},
+  "Fire Orange":    {txt:"#ff7a00", out:"#2a0a00", bold:true, fontPct:6.5, outlineW:5},
+  "Clean White":    {txt:"#ffffff", out:"#101010", bold:false, fontPct:5.5, outlineW:2}
+};
+
+let caps = [
+  {text:"DIAMOND MIL GAYA!", start:0, end:2.5},
+  {text:"100 DIN", start:2.5, end:5}
+];
+
+function hexToAss(hex){
+  const h = hex.replace('#','');
+  const r = h.slice(0,2), g = h.slice(2,4), b = h.slice(4,6);
+  return '&H00' + (b + g + r).toUpperCase();
+}
+function fmtAss(sec){
+  const t = Math.round(sec*100);
+  const h = Math.floor(t/360000);
+  const m = Math.floor((t%360000)/6000);
+  const s = Math.floor((t%6000)/100);
+  const cs = t%100;
+  return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+}
+function fmtSrt(sec){
+  const t = Math.round(sec*1000);
+  const h = Math.floor(t/3600000);
+  const m = Math.floor((t%3600000)/60000);
+  const s = Math.floor((t%60000)/1000);
+  const ms = t%1000;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms).padStart(3,'0')}`;
+}
+function alignCode(pos){
+  return pos==='bottom' ? 2 : pos==='middle' ? 5 : 8;
+}
+function effTag(anim){
+  if(anim==='fade') return '{\\fad(180,180)}';
+  if(anim==='pop')  return '{\\fscx80\\fscy80\\t(0,140,\\fscx100\\fscy100)}';
+  return '';
+}
+function currentStyle(){
+  const [w,h] = $('res').value.split('x').map(Number);
+  return {
+    w, h,
+    fontPct: parseFloat($('fontPct').value),
+    outlineW: parseFloat($('outlineW').value),
+    txt: $('txtColor').value,
+    out: $('outColor').value,
+    pos: $('pos').value,
+    anim: $('anim').value,
+    font: $('font').value,
+    bold: $('bold').checked
+  };
+}
+
+function buildAss(){
+  const s = currentStyle();
+  const fontSize = Math.round(s.fontPct/100 * s.h);
+  const boldFlag = s.bold ? -1 : 0;
+  const marginV = Math.round(s.h*0.055);
+  const lines = caps
+    .filter(c => c.text.trim() !== '' && c.end > c.start)
+    .map(c => `Dialogue: 0,${fmtAss(c.start)},${fmtAss(c.end)},Cool,,0,0,0,,${effTag(s.anim)}${c.text.replace(/\n/g,'\\N')}`);
+  return [
+    '[Script Info]',
+    'ScriptType: v4.00+',
+    `PlayResX: ${s.w}`,
+    `PlayResY: ${s.h}`,
+    'WrapStyle: 0',
+    'ScaledBorderAndShadow: yes',
+    '',
+    '[V4+ Styles]',
+    'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
+    `Style: Cool,${s.font},${fontSize},${hexToAss(s.txt)},&H000000FF,${hexToAss(s.out)},&H80000000,${boldFlag},0,0,0,100,100,1.5,0,1,${s.outlineW},2,${alignCode(s.pos)},60,60,${marginV},1`,
+    '',
+    '[Events]',
+    'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
+    ...lines,
+    ''
+  ].join('\n');
+}
+
+function buildSrt(){
+  let out = '';
+  let i = 1;
+  caps.filter(c => c.text.trim()!=='' && c.end>c.start).forEach(c => {
+    out += `${i}\n${fmtSrt(c.start)} --> ${fmtSrt(c.end)}\n${c.text}\n\n`;
+    i++;
+  });
+  return out;
+}
+
+function download(name, text){
+  const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+function renderPreview(){
+  const s = currentStyle();
+  const box = $('previewBox');
+  box.style.aspectRatio = `${s.w} / ${s.h}`;
+  $('resTag').textContent = `${s.w} × ${s.h}`;
+  const el = $('capText');
+  const bh = box.clientHeight || 300;
+  el.style.fontSize = (s.fontPct/100 * bh) + 'px';
+  el.style.fontFamily = `'${s.font}', sans-serif`;
+  el.style.fontWeight = s.bold ? '800' : '400';
+  el.style.color = s.txt;
+  el.style.webkitTextStroke = s.outlineW > 0 ? `${s.outlineW*(bh/300)}px ${s.out}` : '0';
+  el.style.paintOrder = 'stroke fill';
+  const pad = '6%';
+  if(s.pos==='bottom'){ el.style.top='auto'; el.style.bottom=pad; el.style.transform='translateX(-50%)'; }
+  else if(s.pos==='middle'){ el.style.bottom='auto'; el.style.top='50%'; el.style.transform='translate(-50%,-50%)'; }
+  else { el.style.bottom='auto'; el.style.top=pad; el.style.transform='translateX(-50%)'; }
+  el.textContent = $('capInput').value || ' ';
+  // animation sample
+  el.style.opacity = '1';
+  if(s.anim==='pop'){ el.style.transform += ' scale(1)'; }
+}
+
+function renderCaps(){
+  const list = $('capList');
+  list.innerHTML = '';
+  caps.forEach((c, i) => {
+    const row = document.createElement('div');
+    row.className = 'cap-row';
+    row.innerHTML = `
+      <input type="text" value="${c.text.replace(/"/g,'&quot;')}" data-i="${i}" data-k="text" placeholder="Caption text">
+      <input type="number" value="${c.start}" step="0.1" min="0" data-i="${i}" data-k="start" title="Start (seconds)">
+      <input type="number" value="${c.end}" step="0.1" min="0" data-i="${i}" data-k="end" title="End (seconds)">
+      <button class="del" data-del="${i}" title="Delete">×</button>`;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const i = +e.target.dataset.i, k = e.target.dataset.k;
+      caps[i][k] = (k==='text') ? e.target.value : parseFloat(e.target.value)||0;
+      if(k==='text' && i===0) { $('capInput').value = e.target.value; renderPreview(); }
+    });
+  });
+  list.querySelectorAll('.del').forEach(b => {
+    b.addEventListener('click', e => {
+      caps.splice(+e.target.dataset.del, 1);
+      if(!caps.length) caps.push({text:'', start:0, end:2});
+      renderCaps();
+    });
+  });
+}
+
+function applyPreset(name){
+  const p = PRESETS[name];
+  $('txtColor').value = p.txt; $('outColor').value = p.out;
+  $('bold').checked = p.bold;
+  $('fontPct').value = p.fontPct; $('fontPctVal').textContent = p.fontPct.toFixed(1);
+  $('outlineW').value = p.outlineW; $('outlineWVal').textContent = p.outlineW;
+  renderPreview();
+}
+
+function init(){
+  const pc = $('presets');
+  Object.keys(PRESETS).forEach(name => {
+    const b = document.createElement('button');
+    b.className = 'preset'; b.textContent = name;
+    b.onclick = () => { applyPreset(name); toast(name + ' applied'); };
+    pc.appendChild(b);
+  });
+
+  ['fontPct','outlineW','txtColor','outColor','pos','anim','font','bold','res']
+    .forEach(id => $(id).addEventListener('input', renderPreview));
+  $('fontPct').addEventListener('input', e => $('fontPctVal').textContent = (+e.target.value).toFixed(1));
+  $('outlineW').addEventListener('input', e => $('outlineWVal').textContent = e.target.value);
+  $('capInput').addEventListener('input', renderPreview);
+
+  $('addCap').onclick = () => {
+    const last = caps[caps.length-1] || {end:0};
+    caps.push({text:'', start:last.end, end:last.end+2.5});
+    renderCaps();
+  };
+  $('expAss').onclick = () => { download('captions.ass', buildAss()); toast('.ass downloaded'); };
+  $('expSrt').onclick = () => { download('captions.srt', buildSrt()); toast('.srt downloaded'); };
+  $('copyCmd').onclick = () => {
+    const cmd = $('cmd').textContent;
+    navigator.clipboard.writeText(cmd).then(()=>toast('Command copied')).catch(()=>toast('Copy failed — select manually'));
+  };
+
+  renderCaps();
+  renderPreview();
+  window.addEventListener('resize', renderPreview);
+}
+init();
+</script>
+</body>
+</html>
